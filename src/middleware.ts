@@ -23,11 +23,16 @@ export async function middleware(req: NextRequest) {
     { prefix: "/youth", allowedRoles: ["YOUTH_DONOR"] },
     { prefix: "/hospital", allowedRoles: ["HOSPITAL"] },
     { prefix: "/blood-bank", allowedRoles: ["BLOOD_BANK"] },
-    { prefix: "/government", allowedRoles: ["GOVERNMENT_OFFICIAL"] },
+    { prefix: "/government", allowedRoles: ["GOVERNMENT_OFFICIAL", "SUPER_ADMIN"] },
     { prefix: "/admin", allowedRoles: ["SUPER_ADMIN"] },
+    { prefix: "/ambulance", allowedRoles: ["AMBULANCE", "SUPER_ADMIN"] },
+    {
+      prefix: "/track",
+      allowedRoles: ["HOSPITAL", "BLOOD_BANK", "GOVERNMENT_OFFICIAL", "SUPER_ADMIN", "AMBULANCE"],
+    },
     {
       prefix: "/settings",
-      allowedRoles: ["YOUTH_DONOR", "HOSPITAL", "BLOOD_BANK", "GOVERNMENT_OFFICIAL", "SUPER_ADMIN"],
+      allowedRoles: ["YOUTH_DONOR", "HOSPITAL", "BLOOD_BANK", "GOVERNMENT_OFFICIAL", "SUPER_ADMIN", "AMBULANCE"],
     },
   ];
 
@@ -80,6 +85,9 @@ export async function middleware(req: NextRequest) {
         case "SUPER_ADMIN":
           fallback = "/admin/dashboard";
           break;
+        case "AMBULANCE":
+          fallback = "/ambulance/dashboard";
+          break;
       }
       return NextResponse.redirect(new URL(fallback, req.url));
     }
@@ -102,6 +110,8 @@ export const config = {
     "/blood-bank/:path*",
     "/government/:path*",
     "/admin/:path*",
+    "/ambulance/:path*",
+    "/track/:path*",
     "/settings/:path*",
   ],
 };
