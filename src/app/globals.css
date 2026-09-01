@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #020617;
+  --foreground: #f8fafc;
+  --card-bg: #0f172a;
+  --card-border: #334155;
+  --table-header-bg: #090d16;
+  --table-row-bg: #0f172a;
+  --table-row-hover: #1e293b;
 }
 
 @theme inline {
@@ -12,15 +17,116 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body {
+  background-color: #020617 !important;
+  color: #f8fafc !important;
+  color-scheme: dark;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* High Contrast Global Card & Table Tokens */
+.yr-card {
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+}
+
+.yr-card-header {
+  background-color: #090d16;
+  border-bottom: 1px solid #334155;
+}
+
+.yr-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background-color: #0f172a;
+}
+
+.yr-table th {
+  background-color: #090d16;
+  color: #cbd5e1;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid #334155;
+}
+
+.yr-table td {
+  padding: 1rem;
+  color: #f1f5f9;
+  border-bottom: 1px solid #1e293b;
+  font-size: 0.8125rem;
+}
+
+.yr-table tr:hover td {
+  background-color: #1e293b;
+}
+
+/* High Contrast Status Badges */
+.badge-emergency {
+  background-color: #4c0519;
+  color: #fecdd3;
+  border: 1.5px solid #f43f5e;
+  font-weight: 800;
+}
+
+.badge-critical {
+  background-color: #451a03;
+  color: #fed7aa;
+  border: 1.5px solid #f97316;
+  font-weight: 800;
+}
+
+.badge-urgent {
+  background-color: #422006;
+  color: #fef08a;
+  border: 1.5px solid #eab308;
+  font-weight: 800;
+}
+
+.badge-routine {
+  background-color: #172554;
+  color: #bfdbfe;
+  border: 1.5px solid #3b82f6;
+  font-weight: 700;
+}
+
+.badge-fulfilled {
+  background-color: #022c22;
+  color: #a7f3d0;
+  border: 1.5px solid #10b981;
+  font-weight: 800;
+}
+
+.badge-partial {
+  background-color: #083344;
+  color: #a5f3fc;
+  border: 1.5px solid #06b6d4;
+  font-weight: 800;
+}
+
+.badge-pending {
+  background-color: #1e293b;
+  color: #fde047;
+  border: 1.5px solid #eab308;
+  font-weight: 800;
+}
+
+.badge-available {
+  background-color: #022c22;
+  color: #6ee7b7;
+  border: 1.5px solid #10b981;
+  font-weight: 800;
+}
+
+.badge-on-mission {
+  background-color: #083344;
+  color: #67e8f9;
+  border: 1.5px solid #06b6d4;
+  font-weight: 800;
 }

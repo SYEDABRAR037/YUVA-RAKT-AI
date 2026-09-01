@@ -1,0 +1,885 @@
+// YUVA-RAKT AI — Master Prisma Schema
+// National Youth Blood Intelligence & Emergency Response Network
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------
+// ENUMS (Strict domain definitions)
+// -------------------------------------------------------------
+
+enum UserRole {
+  YOUTH_DONOR
+  HOSPITAL
+  BLOOD_BANK
+  GOVERNMENT_OFFICIAL
+  SUPER_ADMIN
+  AMBULANCE
+}
+
+enum AccountStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum BloodGroup {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+}
+
+enum BloodComponentType {
+  WHOLE_BLOOD
+  RBC
+  PLASMA
+  PLATELETS
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  NOT_AVAILABLE
+  UNKNOWN
+}
+
+enum RequestUrgency {
+  ROUTINE
+  URGENT
+  CRITICAL
+  EMERGENCY
+}
+
+enum RequestStatus {
+  PENDING
+  ACKNOWLEDGED
+  MATCHING
+  PARTIALLY_FULFILLED
+  FULFILLED
+  CANCELLED
+  EXPIRED
+}
+
+enum DonationStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum InventoryTransactionType {
+  DONATION
+  ALLOCATION
+  RELEASE
+  ADJUSTMENT
+  EXPIRY
+  TRANSFER
+  RETURN
+}
+
+enum NotificationType {
+  BLOOD_REQUEST
+  DONOR_MATCH
+  VERIFICATION
+  INVENTORY_ALERT
+  REQUEST_UPDATE
+  SYSTEM
+  AMBULANCE_DISPATCH
+}
+
+enum DonorResponseStatus {
+  INTERESTED
+  DECLINED
+  CONTACT_REQUESTED
+  COMPLETED
+}
+
+enum ConsentType {
+  PRIVACY_POLICY
+  EMERGENCY_NOTIFICATION
+  LOCATION_SHARING
+  DATA_PROCESSING
+}
+
+// Phase 3 AI Enums
+enum DemandTrend {
+  INCREASING
+  STABLE
+  DECREASING
+}
+
+enum ShortageRiskLevel {
+  LOW
+  MODERATE
+  HIGH
+  CRITICAL
+}
+
+enum DonorPriorityTier {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum InsightSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum InsightType {
+  SHORTAGE_ALERT
+  DEMAND_SPIKE
+  DONOR_MOBILIZATION
+  EXPIRY_RISK
+}
+
+// Phase 4 Emergency & Campaign Enums
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum EscalationLevel {
+  LEVEL_1_WARNING
+  LEVEL_2_EXPANDED_OUTREACH
+  LEVEL_3_STATE_CRITICAL
+}
+
+enum EscalationStatus {
+  ACTIVE
+  RESOLVED
+}
+
+// Phase 5 Ambulance & Live Map Enums
+enum AmbulanceStatus {
+  AVAILABLE
+  BUSY
+  ON_MISSION
+  MAINTENANCE
+  INACTIVE
+}
+
+enum MissionStatus {
+  ASSIGNED
+  ACCEPTED
+  REJECTED
+  EN_ROUTE_TO_BLOOD_BANK
+  ARRIVED_AT_BLOOD_BANK
+  BLOOD_COLLECTED
+  EN_ROUTE_TO_HOSPITAL
+  ARRIVED_AT_HOSPITAL
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum ResponseMode {
+  PREDICTIVE_SHORTAGE
+  IMMEDIATE_EMERGENCY
+}
+
+// -------------------------------------------------------------
+// CORE USER & IDENTITY
+// -------------------------------------------------------------
+
+model User {
+  id             String        @id @default(cuid())
+  fullName       String
+  email          String        @unique
+  phone          String        @unique
+  passwordHash   String
+  dateOfBirth    DateTime?
+  gender         String?
+  state          String
+  district       String
+  city           String?
+  role           UserRole      @default(YOUTH_DONOR)
+  accountStatus  AccountStatus @default(ACTIVE)
+  emailVerified  Boolean       @default(false)
+  phoneVerified  Boolean       @default(false)
+  lastLoginAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Role Profile Relations
+  youthDonorProfile YouthDonorProfile?
+  hospital          Hospital?
+  bloodBank         BloodBank?
+  ambulance         Ambulance?
+
+  // Compliance, Security & Activity Relations
+  consents            Consent[]
+  auditLogs           AuditLog[]
+  passwordResetTokens PasswordResetToken[]
+  notifications       Notification[]
+  createdRequests     BloodRequest[]         @relation("CreatedRequests")
+  createdCampaigns    MobilizationCampaign[] @relation("CreatedCampaigns")
+
+  @@index([role, accountStatus])
+  @@index([email])
+  @@index([phone])
+  @@index([state, district])
+}
+
+// -------------------------------------------------------------
+// YOUTH DONOR PROFILE
+// -------------------------------------------------------------
+
+model YouthDonorProfile {
+  id                           String             @id @default(cuid())
+  userId                       String             @unique
+  user                         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bloodGroup                   BloodGroup
+  lastDonationDate             DateTime?
+  donationCount                Int                @default(0)
+  verificationStatus           VerificationStatus @default(UNVERIFIED)
+  rejectionReason              String?
+  verificationSubmittedAt      DateTime?
+  availabilityStatus           AvailabilityStatus @default(AVAILABLE)
+  preferredLanguage            String             @default("en") // "en", "hi", "mr", "te"
+  
+  // Explicit Consent Preferences
+  emergencyNotificationConsent Boolean            @default(true)
+  locationSharingConsent       Boolean            @default(true)
+  privacyConsent               Boolean            @default(true)
+
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @updatedAt
+
+  // Relations
+  donations              Donation[]
+  verificationRequests   DonorVerificationRequest[]
+  donorResponses         DonorResponse[]
+  donorPriorityScores    DonorPriorityScore[]
+  campaignResponses      CampaignDonorResponse[]
+
+  @@index([bloodGroup, verificationStatus, availabilityStatus])
+}
+
+// -------------------------------------------------------------
+// DONOR VERIFICATION REQUEST
+// -------------------------------------------------------------
+
+model DonorVerificationRequest {
+  id                    String             @id @default(cuid())
+  donorId               String
+  donor                 YouthDonorProfile  @relation(fields: [donorId], references: [id], onDelete: Cascade)
+
+  status                VerificationStatus @default(PENDING)
+  documentType          String?            // "BLOOD_CAMP_CARD", "LAB_REPORT", "HOSPITAL_CERTIFICATE", "GOVT_ID"
+  documentNumber        String?
+  notes                 String?
+  rejectionReason       String?
+  submittedAt           DateTime           @default(now())
+  reviewedAt            DateTime?
+  reviewedByBloodBankId String?
+  reviewedByBloodBank   BloodBank?         @relation("ReviewedVerifications", fields: [reviewedByBloodBankId], references: [id])
+
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([status, submittedAt])
+  @@index([donorId])
+}
+
+// -------------------------------------------------------------
+// HOSPITAL ORGANIZATION
+// -------------------------------------------------------------
+
+model Hospital {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name               String
+  registrationNumber String             @unique
+  email              String
+  phone              String
+  address            String
+  city               String?
+  district           String
+  state              String
+  pincode            String
+  verificationStatus VerificationStatus @default(PENDING)
+  latitude           Float?
+  longitude          Float?
+
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  // Relations
+  bloodRequests      BloodRequest[]
+  destMissions       AmbulanceMission[] @relation("DestinationHospitalMissions")
+
+  @@index([state, district, verificationStatus])
+}
+
+// -------------------------------------------------------------
+// BLOOD BANK ORGANIZATION
+// -------------------------------------------------------------
+
+model BloodBank {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name               String
+  registrationNumber String             @unique
+  email              String
+  phone              String
+  address            String
+  city               String?
+  district           String
+  state              String
+  pincode            String
+  verificationStatus VerificationStatus @default(PENDING)
+  latitude           Float?
+  longitude          Float?
+
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  // Relations
+  inventory              BloodInventory[]
+  inventoryTransactions  InventoryTransaction[]
+  donations              Donation[]
+  allocations            BloodAllocation[]
+  acknowledgedRequests   BloodRequest[]             @relation("AcknowledgedRequests")
+  reviewedVerifications  DonorVerificationRequest[] @relation("ReviewedVerifications")
+  sourceMissions         AmbulanceMission[]         @relation("SourceBloodBankMissions")
+
+  @@index([state, district, verificationStatus])
+}
+
+// -------------------------------------------------------------
+// DONATIONS RECORD
+// -------------------------------------------------------------
+
+model Donation {
+  id                String             @id @default(cuid())
+  donorId           String
+  donor             YouthDonorProfile  @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  bloodBankId       String
+  bloodBank         BloodBank          @relation(fields: [bloodBankId], references: [id], onDelete: Restrict)
+
+  donationDate      DateTime           @default(now())
+  units             Int                @default(1)
+  bloodGroup        BloodGroup
+  componentType     BloodComponentType @default(WHOLE_BLOOD)
+  status            DonationStatus     @default(COMPLETED)
+  campName          String?
+  certificateNumber String?
+  notes             String?
+
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([donorId, donationDate])
+  @@index([bloodBankId, donationDate])
+  @@index([bloodGroup, status])
+}
+
+// -------------------------------------------------------------
+// BLOOD INVENTORY
+// -------------------------------------------------------------
+
+model BloodInventory {
+  id             String             @id @default(cuid())
+  bloodBankId    String
+  bloodBank      BloodBank          @relation(fields: [bloodBankId], references: [id], onDelete: Cascade)
+
+  bloodGroup     BloodGroup
+  componentType  BloodComponentType
+  unitsAvailable Int                @default(0)
+  unitsReserved  Int                @default(0)
+  batchNumber    String?
+  collectionDate DateTime           @default(now())
+  expiryDate     DateTime
+  lastUpdatedAt  DateTime           @updatedAt
+  createdAt      DateTime           @default(now())
+
+  // Relations
+  transactions   InventoryTransaction[]
+  allocations    BloodAllocation[]
+
+  @@unique([bloodBankId, bloodGroup, componentType, expiryDate])
+  @@index([bloodBankId, bloodGroup, componentType])
+  @@index([expiryDate])
+}
+
+// -------------------------------------------------------------
+// INVENTORY TRANSACTIONS
+// -------------------------------------------------------------
+
+model InventoryTransaction {
+  id              String                   @id @default(cuid())
+  bloodBankId     String
+  bloodBank       BloodBank                @relation(fields: [bloodBankId], references: [id], onDelete: Cascade)
+  inventoryId     String?
+  inventory       BloodInventory?          @relation(fields: [inventoryId], references: [id], onDelete: SetNull)
+
+  bloodGroup      BloodGroup
+  componentType   BloodComponentType
+  quantity        Int                      // Positive for additions, negative for deductions
+  transactionType InventoryTransactionType
+  referenceId     String?                  // Donation ID or BloodRequest/Allocation ID
+  notes           String?
+  createdBy       String                   // userId
+  createdAt       DateTime                 @default(now())
+
+  @@index([bloodBankId, createdAt])
+  @@index([bloodGroup, componentType])
+}
+
+// -------------------------------------------------------------
+// HOSPITAL BLOOD REQUEST
+// -------------------------------------------------------------
+
+model BloodRequest {
+  id                         String             @id @default(cuid())
+  hospitalId                 String
+  hospital                   Hospital           @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  bloodGroup                 BloodGroup
+  componentType              BloodComponentType
+  unitsRequired              Int
+  unitsFulfilled             Int                @default(0)
+  urgency                    RequestUrgency     @default(ROUTINE)
+  requiredBy                 DateTime
+  reason                     String?
+  patientAgeGroup            String?            // "ADULT", "PEDIATRIC", "GERIATRIC"
+  status                     RequestStatus      @default(PENDING)
+  
+  acknowledgedAt             DateTime?
+  acknowledgedByBloodBankId  String?
+  acknowledgedByBloodBank    BloodBank?         @relation("AcknowledgedRequests", fields: [acknowledgedByBloodBankId], references: [id])
+  
+  createdBy                  String             // userId
+  creator                    User               @relation("CreatedRequests", fields: [createdBy], references: [id])
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @updatedAt
+
+  // Relations
+  allocations                BloodAllocation[]
+  donorResponses             DonorResponse[]
+  donorPriorityScores        DonorPriorityScore[]
+  escalations                EmergencyEscalation[]
+  ambulanceMissions          AmbulanceMission[]
+  emergencyEvents            EmergencyResponseEvent[]
+
+  @@index([hospitalId, status])
+  @@index([bloodGroup, componentType, status])
+  @@index([urgency, requiredBy])
+  @@index([status, createdAt])
+}
+
+// -------------------------------------------------------------
+// BLOOD ALLOCATION RECORD
+// -------------------------------------------------------------
+
+model BloodAllocation {
+  id             String             @id @default(cuid())
+  requestId      String
+  request        BloodRequest       @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  bloodBankId    String
+  bloodBank      BloodBank          @relation(fields: [bloodBankId], references: [id], onDelete: Restrict)
+  inventoryId    String?
+  inventory      BloodInventory?    @relation(fields: [inventoryId], references: [id], onDelete: SetNull)
+
+  bloodGroup     BloodGroup
+  componentType  BloodComponentType
+  unitsAllocated Int
+  allocatedBy    String             // userId
+  notes          String?
+  allocatedAt    DateTime           @default(now())
+
+  @@index([requestId])
+  @@index([bloodBankId, allocatedAt])
+}
+
+// -------------------------------------------------------------
+// DONOR OPPORTUNITY RESPONSE
+// -------------------------------------------------------------
+
+model DonorResponse {
+  id        String              @id @default(cuid())
+  requestId String
+  request   BloodRequest        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  donorId   String
+  donor     YouthDonorProfile   @relation(fields: [donorId], references: [id], onDelete: Cascade)
+
+  status    DonorResponseStatus @default(INTERESTED)
+  message   String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@unique([requestId, donorId])
+  @@index([donorId, status])
+  @@index([requestId, status])
+}
+
+// -------------------------------------------------------------
+// NOTIFICATIONS
+// -------------------------------------------------------------
+
+model Notification {
+  id                String           @id @default(cuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type              NotificationType
+  title             String
+  message           String
+  relatedEntityType String?          // "BLOOD_REQUEST", "DONATION", "VERIFICATION", "INVENTORY", "CAMPAIGN", "AMBULANCE_MISSION"
+  relatedEntityId   String?
+  read              Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+
+  @@index([userId, read, createdAt])
+}
+
+// -------------------------------------------------------------
+// CONSENT MANAGEMENT
+// -------------------------------------------------------------
+
+model Consent {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  consentType ConsentType
+  accepted    Boolean     @default(true)
+  version     String      @default("v1.0")
+  revokedAt   DateTime?
+  metadata    Json?
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([userId, consentType])
+}
+
+// -------------------------------------------------------------
+// AUDIT LOGS
+// -------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action, entityType])
+}
+
+// -------------------------------------------------------------
+// PASSWORD RESET TOKENS
+// -------------------------------------------------------------
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime  @default(now())
+
+  @@index([token, expiresAt])
+}
+
+// =============================================================
+// PHASE 3: AI INTELLIGENCE & FORECASTING STORAGE MODELS
+// =============================================================
+
+model DemandForecast {
+  id                 String             @id @default(cuid())
+  state              String
+  district           String
+  bloodGroup         BloodGroup
+  componentType      BloodComponentType
+  periodDays         Int                // 7, 14, 30
+  predictedUnits     Int
+  confidenceScore    Float              // 0.0 - 1.0
+  demandTrend        DemandTrend        @default(STABLE)
+  historicalDailyAvg Float
+  dataQuality        String             @default("CALIBRATED_LIVE") // "CALIBRATED_LIVE", "COLD_START_BASELINE"
+  modelVersion       String             @default("forecast-v1")
+  generatedAt        DateTime           @default(now())
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([state, district, bloodGroup, componentType, periodDays])
+  @@index([state, district, bloodGroup, componentType])
+  @@index([periodDays, demandTrend])
+}
+
+model ShortageRisk {
+  id                     String             @id @default(cuid())
+  state                  String
+  district               String
+  bloodGroup             BloodGroup
+  componentType          BloodComponentType
+  riskLevel              ShortageRiskLevel  @default(LOW)
+  riskScore              Int                // 0 - 100
+  currentInventoryUnits  Int
+  predictedDemandUnits   Int
+  expiringUnits          Int                @default(0)
+  activeEmergencyRequests Int               @default(0)
+  contributingFactors    Json               // Array of explanation strings
+  recommendedActions     Json               // Array of actionable operational recommendations
+  modelVersion           String             @default("risk-v1")
+  generatedAt            DateTime           @default(now())
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@unique([state, district, bloodGroup, componentType])
+  @@index([state, district, riskLevel])
+  @@index([riskLevel, riskScore])
+}
+
+model DonorPriorityScore {
+  id                 String             @id @default(cuid())
+  donorId            String
+  donor              YouthDonorProfile  @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  requestId          String
+  request            BloodRequest       @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  operationalScore   Int                // 0 - 100
+  priorityTier       DonorPriorityTier  @default(MEDIUM)
+  distanceKm         Float?
+  rankingFactors     Json               // Array of reasons: "Verified donor", "Matching blood group", etc.
+  modelVersion       String             @default("donor-rank-v1")
+  generatedAt        DateTime           @default(now())
+
+  @@unique([requestId, donorId])
+  @@index([requestId, operationalScore])
+  @@index([donorId, priorityTier])
+}
+
+model AIInsight {
+  id            String          @id @default(cuid())
+  type          InsightType
+  title         String
+  message       String
+  severity      InsightSeverity @default(INFO)
+  state         String?
+  district      String?
+  bloodGroup    BloodGroup?
+  componentType BloodComponentType?
+  metadata      Json?
+  generatedAt   DateTime        @default(now())
+
+  @@index([type, severity])
+  @@index([state, district])
+}
+
+// =============================================================
+// PHASE 4: EMERGENCY MOBILIZATION & CAMPAIGN MODELS
+// =============================================================
+
+model MobilizationCampaign {
+  id                String             @id @default(cuid())
+  title             String
+  description       String?
+  bloodGroup        BloodGroup
+  componentType     BloodComponentType @default(WHOLE_BLOOD)
+  state             String
+  district          String
+  targetDonorsCount Int                @default(50)
+  startDate         DateTime           @default(now())
+  endDate           DateTime
+  status            CampaignStatus     @default(ACTIVE)
+  createdBy         String             // userId
+  creator           User               @relation("CreatedCampaigns", fields: [createdBy], references: [id])
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  donorResponses    CampaignDonorResponse[]
+
+  @@index([state, district, status])
+  @@index([bloodGroup, status])
+}
+
+model CampaignDonorResponse {
+  id          String               @id @default(cuid())
+  campaignId  String
+  campaign    MobilizationCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  donorId     String
+  donor       YouthDonorProfile    @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  status      DonorResponseStatus  @default(INTERESTED)
+  notes       String?
+  createdAt   DateTime             @default(now())
+
+  @@unique([campaignId, donorId])
+  @@index([campaignId, status])
+}
+
+model EmergencyEscalation {
+  id              String           @id @default(cuid())
+  requestId       String
+  request         BloodRequest     @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  escalationLevel EscalationLevel  @default(LEVEL_1_WARNING)
+  reason          String
+  triggeredBy     String           // userId or "SYSTEM_AUTO"
+  status          EscalationStatus @default(ACTIVE)
+  createdAt       DateTime         @default(now())
+  resolvedAt      DateTime?
+
+  @@index([requestId, status])
+  @@index([escalationLevel, status])
+}
+
+// =============================================================
+// PHASE 5: LIVE BLOOD INTELLIGENCE MAP & AMBULANCE COORDINATION
+// =============================================================
+
+model Ambulance {
+  id                    String            @id @default(cuid())
+  userId                String            @unique
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  vehicleNumber         String            @unique
+  displayName           String
+  status                AmbulanceStatus   @default(AVAILABLE)
+  district              String
+  state                 String
+  currentLatitude       Float             @default(18.5204)
+  currentLongitude      Float             @default(73.8567)
+  accuracy              Float?
+  speed                 Float?
+  heading               Float?
+  isTrackingActive      Boolean           @default(false)
+  locationSource        String            @default("REAL_GPS") // "REAL_GPS" or "DEMO_SIMULATION"
+  lastLocationUpdatedAt DateTime          @default(now())
+
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  // Relations
+  missions              AmbulanceMission[]
+  locationHistory       AmbulanceLocationHistory[]
+
+  @@index([district, status])
+  @@index([state, status])
+}
+
+model AmbulanceMission {
+  id                    String            @id @default(cuid())
+  ambulanceId           String
+  ambulance             Ambulance         @relation(fields: [ambulanceId], references: [id], onDelete: Cascade)
+
+  bloodRequestId        String
+  bloodRequest          BloodRequest      @relation(fields: [bloodRequestId], references: [id], onDelete: Cascade)
+
+  sourceBloodBankId     String
+  sourceBloodBank       BloodBank         @relation("SourceBloodBankMissions", fields: [sourceBloodBankId], references: [id], onDelete: Restrict)
+
+  destinationHospitalId String
+  destinationHospital   Hospital          @relation("DestinationHospitalMissions", fields: [destinationHospitalId], references: [id], onDelete: Restrict)
+
+  status                MissionStatus     @default(ASSIGNED)
+  notes                 String?
+
+  assignedAt            DateTime          @default(now())
+  acceptedAt            DateTime?
+  rejectedAt            DateTime?
+  bloodCollectedAt      DateTime?
+  deliveredAt           DateTime?
+  completedAt           DateTime?
+  cancelledAt           DateTime?
+
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  // Relations
+  locationHistory       AmbulanceLocationHistory[]
+
+  @@index([ambulanceId, status])
+  @@index([bloodRequestId, status])
+  @@index([status, createdAt])
+}
+
+model AmbulanceLocationHistory {
+  id          String            @id @default(cuid())
+  ambulanceId String
+  ambulance   Ambulance         @relation(fields: [ambulanceId], references: [id], onDelete: Cascade)
+
+  missionId   String?
+  mission     AmbulanceMission? @relation(fields: [missionId], references: [id], onDelete: SetNull)
+
+  latitude    Float
+  longitude   Float
+  accuracy    Float?
+  source      String            @default("REAL_GPS") // "REAL_GPS" or "DEMO_SIMULATION"
+  recordedAt  DateTime          @default(now())
+
+  @@index([ambulanceId, recordedAt])
+  @@index([missionId, recordedAt])
+}
+
+model OperationalLocation {
+  id           String   @id @default(cuid())
+  entityType   String   // "HOSPITAL", "BLOOD_BANK", "EMERGENCY_INCIDENT", "DONATION_CAMP"
+  entityId     String?
+  latitude     Float
+  longitude    Float
+  district     String
+  state        String
+  addressLabel String
+  accuracy     Float?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([state, district])
+  @@index([entityType, entityId])
+}
+
+model EmergencyResponseEvent {
+  id          String       @id @default(cuid())
+  requestId   String
+  request     BloodRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  eventType   String       // "SHORTAGE_DETECTED", "RESOURCE_DISCOVERY_STARTED", "AMBULANCE_DISPATCHED", etc.
+  description String
+  metadata    Json?
+
+  createdAt   DateTime     @default(now())
+
+  @@index([requestId, createdAt])
+  @@index([eventType, createdAt])
+}
