@@ -161,10 +161,10 @@ export function Navbar() {
                       ? "bg-purple-950 text-purple-200 border-2 border-purple-500 shadow-md"
                       : "text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent"
                   }`}
-                  title="National Blood Intelligence Command Center"
+                  title={t.nav.governmentDashboard}
                 >
                   <Landmark className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                  <span>National Blood Intelligence</span>
+                  <span>{t.nav.governmentDashboard}</span>
                 </Link>
 
                 <Link
@@ -174,10 +174,10 @@ export function Navbar() {
                       ? "bg-indigo-950 text-indigo-200 border-2 border-indigo-500 shadow-md"
                       : "text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent"
                   }`}
-                  title="AI Demand Forecast & Shortage Risks"
+                  title={t.nav.governmentForecast}
                 >
                   <TrendingUp className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                  <span>AI Demand Forecast</span>
+                  <span>{t.nav.governmentForecast}</span>
                 </Link>
 
                 <Link
@@ -187,10 +187,10 @@ export function Navbar() {
                       ? "bg-rose-950 text-rose-200 border-2 border-rose-500 shadow-md"
                       : "text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent"
                   }`}
-                  title="Emergency Radar & Mobilization"
+                  title={t.nav.governmentEmergency}
                 >
                   <Activity className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                  <span>Emergency Radar</span>
+                  <span>{t.nav.governmentEmergency}</span>
                 </Link>
 
                 <Link
@@ -200,10 +200,10 @@ export function Navbar() {
                       ? "bg-cyan-950 text-cyan-200 border-2 border-cyan-500 shadow-md"
                       : "text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent"
                   }`}
-                  title="Mobilization Campaigns"
+                  title={t.nav.campaigns}
                 >
                   <Flame className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                  <span>Campaigns</span>
+                  <span>{t.nav.campaigns}</span>
                 </Link>
 
                 <Link
@@ -213,10 +213,10 @@ export function Navbar() {
                       ? "bg-emerald-950 text-emerald-200 border-2 border-emerald-500 shadow-md"
                       : "text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent"
                   }`}
-                  title="National Live Blood Intelligence Map"
+                  title={t.nav.liveMap}
                 >
                   <Radio className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Live Map</span>
+                  <span>{t.nav.liveMap}</span>
                 </Link>
 
                 {/* Platform Admin Direct Links */}
@@ -231,7 +231,7 @@ export function Navbar() {
                   }`}
                 >
                   <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span>Users</span>
+                  <span>{t.nav.adminUsers}</span>
                 </Link>
 
                 <Link
@@ -243,7 +243,7 @@ export function Navbar() {
                   }`}
                 >
                   <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span>Organizations</span>
+                  <span>{t.nav.adminOrgs}</span>
                 </Link>
 
                 <Link
@@ -255,7 +255,7 @@ export function Navbar() {
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span>Audit Logs</span>
+                  <span>{t.nav.adminAudit}</span>
                 </Link>
               </>
             )}
@@ -548,56 +548,56 @@ export function Navbar() {
                 className="p-2.5 rounded-xl bg-slate-900 text-purple-300 font-bold flex items-center gap-2 border border-slate-800"
               >
                 <Landmark className="w-4 h-4 text-purple-400" />
-                <span>National Blood Intelligence</span>
+                <span>{t.nav.governmentDashboard}</span>
               </Link>
               <Link
                 href="/government/ai-forecast"
                 className="p-2.5 rounded-xl bg-slate-900 text-indigo-300 font-bold flex items-center gap-2 border border-slate-800"
               >
                 <TrendingUp className="w-4 h-4 text-indigo-400" />
-                <span>AI Demand Forecast</span>
+                <span>{t.nav.governmentForecast}</span>
               </Link>
               <Link
                 href="/government/emergency"
                 className="p-2.5 rounded-xl bg-slate-900 text-rose-300 font-bold flex items-center gap-2 border border-slate-800"
               >
                 <Activity className="w-4 h-4 text-rose-400" />
-                <span>Emergency Radar</span>
+                <span>{t.nav.governmentEmergency}</span>
               </Link>
               <Link
                 href="/government/campaigns"
                 className="p-2.5 rounded-xl bg-slate-900 text-cyan-300 font-bold flex items-center gap-2 border border-slate-800"
               >
                 <Flame className="w-4 h-4 text-cyan-400" />
-                <span>Campaigns</span>
+                <span>{t.nav.campaigns}</span>
               </Link>
               <Link
                 href="/government/live-map"
                 className="p-2.5 rounded-xl bg-slate-900 text-emerald-300 font-bold flex items-center gap-2 border border-slate-800"
               >
                 <Radio className="w-4 h-4 text-emerald-400" />
-                <span>Live Map</span>
+                <span>{t.nav.liveMap}</span>
               </Link>
               <Link
                 href="/admin/users"
                 className="p-2.5 rounded-xl bg-slate-900 text-slate-200 font-bold flex items-center gap-2 border border-slate-800"
               >
                 <Users className="w-4 h-4 text-slate-400" />
-                <span>Users Management</span>
+                <span>{t.nav.adminUsers}</span>
               </Link>
               <Link
                 href="/admin/organizations"
                 className="p-2.5 rounded-xl bg-slate-900 text-slate-200 font-bold flex items-center gap-2 border border-slate-800"
               >
                 <Building2 className="w-4 h-4 text-slate-400" />
-                <span>Organizations</span>
+                <span>{t.nav.adminOrgs}</span>
               </Link>
               <Link
                 href="/admin/audit-logs"
                 className="p-2.5 rounded-xl bg-slate-900 text-slate-200 font-bold flex items-center gap-2 border border-slate-800"
               >
                 <FileText className="w-4 h-4 text-slate-400" />
-                <span>Audit Logs</span>
+                <span>{t.nav.adminAudit}</span>
               </Link>
             </div>
           )}

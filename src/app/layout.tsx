@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import { Navbar } from "@/components/layout/Navbar";
+import { VoiceAssistant } from "@/components/ui/VoiceAssistant";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,7 @@ export default function RootLayout({
         <LanguageProvider>
           <Navbar />
           {children}
+          <VoiceAssistant />
         </LanguageProvider>
       </body>
     </html>
